@@ -68,6 +68,37 @@ function setupScene({ scene, camera, renderer, player, controllers }) {
 	scoreText.rotateX(-Math.PI / 3.3);
 	updateScoreDisplay();
 
+
+	// Spheres and lines
+	const spheres = [];
+	const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+	const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+
+	for (let i = 0; i < 5; i++) {
+		const sphere = new THREE.Mesh(
+			new THREE.SphereGeometry(0.2, 32, 32),
+			sphereMaterial,
+		);
+		sphere.position.set(
+			Math.random() * 10 - 5,
+			Math.random() * 3 + 1,
+			-Math.random() * 5 - 5,
+		);
+		scene.add(sphere);
+		spheres.push(sphere);
+
+		// If this is not the first sphere, create a line connecting to the previous sphere
+		if (i > 0) {
+			const points = [];
+			points.push(spheres[i - 1].position);
+			points.push(sphere.position);
+			const geometry = new THREE.BufferGeometry().setFromPoints(points);
+			const line = new THREE.Line(geometry, lineMaterial);
+			scene.add(line);
+		}
+	}
+
+
 	// Load and set up positional audio
 	const listener = new THREE.AudioListener();
 	camera.add(listener);
