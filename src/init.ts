@@ -11,12 +11,19 @@ import { XRDevice, metaQuest3 } from 'iwer';
 
 import { DevUI } from '@iwer/devui';
 import { GamepadWrapper } from 'gamepad-wrapper';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { VRButton } from 'three/addons/webxr/VRButton.js';
-import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment';
+import { VRButton } from 'three/examples/jsm/webxr/VRButton';
+import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory';
 
-export async function init(setupScene = () => {}, onFrame = () => {}) {
+type Controller = {
+	raySpace: THREE.Group;
+	gripSpace: THREE.Group;
+	mesh: THREE.Object3D;
+	gamepad?: GamepadWrapper; // Optional, as not all controllers will have gamepads
+};
+
+export async function init(setupScene: (args: { scene: THREE.Scene; camera: THREE.PerspectiveCamera; renderer: THREE.WebGLRenderer; player: THREE.Group; controllers: { left: any; right: any } }) => void, onFrame: (delta: number, time: number, globals: any) => void) {
 	// iwer setup
 	let nativeWebXRSupport = false;
 	if (navigator.xr) {
@@ -27,21 +34,27 @@ export async function init(setupScene = () => {}, onFrame = () => {}) {
 		xrDevice.installRuntime();
 		xrDevice.fovy = (75 / 180) * Math.PI;
 		xrDevice.ipd = 0;
+
 		window.xrdevice = xrDevice;
-		xrDevice.controllers.right.position.set(0.15649, 1.43474, -0.38368);
-		xrDevice.controllers.right.quaternion.set(
-			0.14766305685043335,
-			0.02471366710960865,
-			-0.0037767395842820406,
-			0.9887216687202454,
-		);
-		xrDevice.controllers.left.position.set(-0.15649, 1.43474, -0.38368);
-		xrDevice.controllers.left.quaternion.set(
-			0.14766305685043335,
-			0.02471366710960865,
-			-0.0037767395842820406,
-			0.9887216687202454,
-		);
+		if (xrDevice?.controllers?.right) {
+			// Safe to access right controller
+			xrDevice.controllers.right.position.set(0.15649, 1.43474, -0.38368);
+			xrDevice.controllers.right.quaternion.set(
+				0.14766305685043335,
+				0.02471366710960865,
+				-0.0037767395842820406,
+				0.9887216687202454,
+			);
+		}
+		if (xrDevice?.controllers?.left) {
+			xrDevice.controllers.left.position.set(-0.15649, 1.43474, -0.38368);
+			xrDevice.controllers.left.quaternion.set(
+				0.14766305685043335,
+				0.02471366710960865,
+				-0.0037767395842820406,
+				0.9887216687202454,
+			);
+		}
 		new DevUI(xrDevice);
 	}
 
@@ -78,7 +91,10 @@ export async function init(setupScene = () => {}, onFrame = () => {}) {
 	player.add(camera);
 
 	const controllerModelFactory = new XRControllerModelFactory();
-	const controllers = {
+	const controllers: {
+		left: Controller | null;
+		right: Controller | null;
+	} = {
 		left: null,
 		right: null,
 	};
@@ -93,19 +109,23 @@ export async function init(setupScene = () => {}, onFrame = () => {}) {
 		gripSpace.addEventListener('connected', (e) => {
 			raySpace.visible = true;
 			gripSpace.visible = true;
-			const handedness = e.data.handedness;
-			controllers[handedness] = {
-				raySpace,
-				gripSpace,
-				mesh,
-				gamepad: new GamepadWrapper(e.data.gamepad),
-			};
+			const handedness: 'left' | 'right' | "none" = e.data.handedness;
+			if (handedness === 'left' || handedness === 'right') {
+				controllers[handedness] = {
+					raySpace,
+					gripSpace,
+					mesh,
+					gamepad: e.data.gamepad ? new GamepadWrapper(e.data.gamepad) : undefined,
+				};
+			}
 		});
 		gripSpace.addEventListener('disconnected', (e) => {
 			raySpace.visible = false;
 			gripSpace.visible = false;
-			const handedness = e.data.handedness;
-			controllers[handedness] = null;
+			const handedness: 'left' | 'right' | "none" = e.data.handedness;
+			if (handedness === 'left' || handedness === 'right') {
+				controllers[handedness] = null;
+			}
 		});
 	}
 

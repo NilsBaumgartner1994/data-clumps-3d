@@ -6,7 +6,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 module.exports = {
 	mode: 'development',
 	entry: {
-		index: './src/index.js',
+		index: './src/index.ts',
 	},
 	devServer: {
 		static: {
@@ -20,6 +20,18 @@ module.exports = {
 			overlay: { warnings: false, errors: true },
 		},
 	},
+	module: {
+		rules: [
+			{
+				test: /\.tsx?$/,
+				use: 'ts-loader',
+				exclude: /node_modules/,
+			},
+		],
+	},
+	resolve: {
+		extensions: ['.tsx', '.ts', '.js'],
+	},
 	output: {
 		filename: '[name].bundle.js',
 		path: path.resolve(__dirname, 'dist'),
@@ -27,7 +39,7 @@ module.exports = {
 	},
 	plugins: [
 		new ESLintPlugin({
-			extensions: ['js'],
+			extensions: ['ts', 'js'],
 			eslintPath: require.resolve('eslint'),
 			overrideConfigFile: path.resolve(__dirname, './eslint.config.cjs'),
 		}),

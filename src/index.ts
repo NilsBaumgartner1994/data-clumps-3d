@@ -7,19 +7,23 @@
 
 import * as THREE from 'three';
 
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+//import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { Text } from 'troika-three-text';
 import { XR_BUTTONS } from 'gamepad-wrapper';
 import { gsap } from 'gsap';
-import { init } from './init.js';
+import { init } from './init';
 
-const bullets = {};
+const bullets: { [key: string]: THREE.Mesh } = {};
 const forwardVector = new THREE.Vector3(0, 0, -1);
 const bulletSpeed = 10;
 const bulletTimeToLive = 1;
 
 const blasterGroup = new THREE.Group();
-const targets = [];
+const targets: THREE.Object3D[] = [];
+let laserSound: THREE.PositionalAudio;
+let scoreSound: THREE.PositionalAudio;
+
 
 let score = 0;
 const scoreText = new Text();
@@ -30,8 +34,6 @@ scoreText.color = 0xffa276;
 scoreText.anchorX = 'center';
 scoreText.anchorY = 'middle';
 
-let laserSound, scoreSound;
-
 function updateScoreDisplay() {
 	const clampedScore = Math.max(0, Math.min(9999, score));
 	const displayScore = clampedScore.toString().padStart(4, '0');
@@ -39,7 +41,19 @@ function updateScoreDisplay() {
 	scoreText.sync();
 }
 
-function setupScene({ scene, camera, renderer, player, controllers }) {
+function setupScene({
+	scene,
+	camera,
+	renderer,
+	player,
+	controllers,
+					}: {
+	scene: THREE.Scene;
+	camera: THREE.PerspectiveCamera;
+	renderer: THREE.WebGLRenderer;
+	player: THREE.Group;
+	controllers: { left: any; right: any };
+}) {
 	const gltfLoader = new GLTFLoader();
 
 	gltfLoader.load('assets/spacestation.glb', (gltf) => {
@@ -118,9 +132,21 @@ function setupScene({ scene, camera, renderer, player, controllers }) {
 }
 
 function onFrame(
-	delta,
-	time,
-	{ scene, camera, renderer, player, controllers },
+	delta: number,
+	time: number,
+	{
+		scene,
+		camera,
+		renderer,
+		player,
+		controllers,
+	}: {
+		scene: THREE.Scene;
+		camera: THREE.PerspectiveCamera;
+		renderer: THREE.WebGLRenderer;
+		player: THREE.Group;
+		controllers: { left: any; right: any };
+	}
 ) {
 	if (controllers.right) {
 		const { gamepad, raySpace, mesh } = controllers.right;
@@ -139,7 +165,7 @@ function onFrame(
 			if (laserSound.isPlaying) laserSound.stop();
 			laserSound.play();
 
-			const bulletPrototype = blasterGroup.getObjectByName('bullet');
+			const bulletPrototype = blasterGroup.getObjectByName('bullet') as THREE.Mesh; // Ensure it's a Mesh
 			if (bulletPrototype) {
 				const bullet = bulletPrototype.clone();
 				scene.add(bullet);
@@ -206,6 +232,7 @@ function onFrame(
 				}
 			});
 	});
+	// @ts-expect-error This is in the example code of the meta tutorial template
 	gsap.ticker.tick(delta);
 }
 
