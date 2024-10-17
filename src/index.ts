@@ -24,6 +24,11 @@ const targets: THREE.Object3D[] = [];
 let laserSound: THREE.PositionalAudio;
 let scoreSound: THREE.PositionalAudio;
 
+// Global array to store the spheres
+const spheres: THREE.Mesh[] = [];
+const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+
 
 let score = 0;
 const scoreText = new Text();
@@ -40,6 +45,7 @@ function updateScoreDisplay() {
 	scoreText.text = displayScore;
 	scoreText.sync();
 }
+
 
 function setupScene({
 	scene,
@@ -83,11 +89,6 @@ function setupScene({
 	updateScoreDisplay();
 
 
-	// Spheres and lines
-	const spheres = [];
-	const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-	const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
-
 	for (let i = 0; i < 5; i++) {
 		const sphere = new THREE.Mesh(
 			new THREE.SphereGeometry(0.2, 32, 32),
@@ -129,6 +130,31 @@ function setupScene({
 		scoreSound.setBuffer(buffer);
 		scoreText.add(scoreSound);
 	});
+}
+
+// Function to add a new sphere and connect it to the last one
+function addNewSphere(scene: THREE.Scene) {
+	const newSphere = new THREE.Mesh(
+		new THREE.SphereGeometry(0.2, 32, 32),
+		sphereMaterial,
+	);
+	newSphere.position.set(
+		Math.random() * 10 - 5, // Random position for the new sphere
+		Math.random() * 3 + 1,
+		-Math.random() * 5 - 5,
+	);
+	scene.add(newSphere);
+	spheres.push(newSphere);
+
+	// Create a line connecting the new sphere to the last one in the spheres array
+	if (spheres.length > 1) {
+		const points: THREE.Vector3[] = [];
+		points.push(spheres[spheres.length - 2].position); // Previous sphere position
+		points.push(newSphere.position); // New sphere position
+		const geometry = new THREE.BufferGeometry().setFromPoints(points);
+		const line = new THREE.Line(geometry, lineMaterial);
+		scene.add(line);
+	}
 }
 
 function onFrame(
@@ -229,6 +255,10 @@ function onFrame(
 					updateScoreDisplay();
 					if (scoreSound.isPlaying) scoreSound.stop();
 					scoreSound.play();
+
+					// Add a new sphere and connect it to the existing ones
+					addNewSphere(scene);
+
 				}
 			});
 	});
