@@ -1,4 +1,4 @@
-[ttps://nilsbaumgartner1994.github.io/data-clumps-3d/](ttps://nilsbaumgartner1994.github.io/data-clumps-3d/)
+[https://nilsbaumgartner1994.github.io/data-clumps-3d/](https://nilsbaumgartner1994.github.io/data-clumps-3d/)
 
 <p align="center">
     <img src="./tutorial/assets/webxr-first-steps.png" style="max-width:376px"/>
